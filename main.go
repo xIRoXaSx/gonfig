@@ -25,9 +25,9 @@ const (
 )
 
 type Gonf struct {
-	FullPath string
-	Opts     *GonfOptions
-	mux      *sync.Mutex
+	opts GonfOptions
+	path string
+	mux  *sync.Mutex
 }
 
 type GonfOptions struct {
@@ -38,17 +38,29 @@ type GonfOptions struct {
 	mux               *sync.Mutex
 }
 
-func New(opts *GonfOptions) (g *Gonf, err error) {
-	if opts == nil {
-		return nil, errors.New(ErrExpectedNonNilOrEmpty)
-	}
+func New(opts GonfOptions) (g *Gonf, err error) {
 	opts.mux = &sync.Mutex{}
-	g = &Gonf{mux: &sync.Mutex{}, Opts: opts}
+	p, err := opts.fullPath()
+	if err != nil {
+		return
+	}
+	g = &Gonf{mux: &sync.Mutex{}, opts: opts, path: p}
 	return
 }
 
+func (g *Gonf) Options() GonfOptions {
+	return g.opts
+}
+
+func (g *Gonf) FullPath() string {
+	return g.path
+}
+
 func (g *Gonf) WriteToFile(conf interface{}) (err error) {
-	path, err := g.Opts.fullPath()
+	if g == nil {
+		return errors.New(ErrExpectedNonNilOrEmpty)
+	}
+	path, err := g.opts.fullPath()
 	if err != nil {
 		return
 	}
@@ -58,7 +70,7 @@ func (g *Gonf) WriteToFile(conf interface{}) (err error) {
 	if err != nil {
 		return
 	}
-	p = filepath.Join(p, g.Opts.DirName)
+	p = filepath.Join(p, g.opts.DirName)
 	_, err = os.Stat(p)
 	if errors.Is(err, os.ErrNotExist) {
 		err = os.Mkdir(p, 0700)
@@ -69,18 +81,21 @@ func (g *Gonf) WriteToFile(conf interface{}) (err error) {
 		return fmt.Errorf("%s: %v", ErrUnexpected, err)
 	}
 
-	if g.Opts.OverwriteExisting {
+	if g.opts.OverwriteExisting {
 		err = os.Remove(path)
 		if err != nil {
-			return fmt.Errorf("%s: %v", ErrOverwrite, err)
+			return fmt.Errorf("%s: %s: %v", ErrCreatingConfig, ErrOverwrite, err)
 		}
 	}
 
 	// Check if creating the file would overwrite the file.
 	_, err = os.Stat(path)
+	if err == nil && !g.opts.OverwriteExisting {
+		return fmt.Errorf("%s: %s", ErrCreatingConfig, ErrOverwriteDisabled)
+	}
 	if errors.Is(err, os.ErrNotExist) {
 		var b []byte
-		if g.Opts.Type == GonfJson {
+		if g.opts.Type == GonfJson {
 			b, err = json.MarshalIndent(conf, "", "\t")
 		} else {
 			b, err = yaml.Marshal(conf)
@@ -97,7 +112,7 @@ func (g *Gonf) LoadFile(val interface{}) (err error) {
 	g.mux.Lock()
 	defer g.mux.Unlock()
 
-	p, err := g.Opts.fullPath()
+	p, err := g.opts.fullPath()
 	if err != nil {
 		return
 	}
@@ -107,7 +122,7 @@ func (g *Gonf) LoadFile(val interface{}) (err error) {
 		return
 	}
 
-	if g.Opts.Type == GonfJson {
+	if g.opts.Type == GonfJson {
 		return json.Unmarshal(b, val)
 	}
 	return yaml.Unmarshal(b, val)
