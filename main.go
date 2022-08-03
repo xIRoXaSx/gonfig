@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"sync"
 
 	"gopkg.in/yaml.v3"
@@ -40,7 +41,7 @@ type gonfOptions struct {
 
 func New(dirName, fileName string, configType GonfType, overwrite bool) (g *Gonf, err error) {
 	if dirName == "" || fileName == "" {
-		return nil, errors.New(ErrExpectedNonNilOrEmpty)
+		return nil, ErrExpectedNonNilOrEmpty
 	}
 
 	opts := gonfOptions{
@@ -91,7 +92,7 @@ func (g *Gonf) Type() GonfType {
 // WriteToFile writes the Gonfig to the Gonfig file.
 func (g *Gonf) WriteToFile(conf interface{}) (err error) {
 	if g == nil {
-		return errors.New(ErrExpectedNonNilOrEmpty)
+		return ErrExpectedNonNilOrEmpty
 	}
 
 	// Create the folder which contains the config.
@@ -107,21 +108,21 @@ func (g *Gonf) WriteToFile(conf interface{}) (err error) {
 			return
 		}
 	} else if err != nil {
-		return fmt.Errorf("%s: %v", ErrUnexpected, err)
+		return fmt.Errorf("%v: %w", ErrUnexpected, err)
 	}
 
 	fp := g.FullPath()
 	if g.opts.overwrite {
 		err = os.Remove(fp)
 		if err != nil {
-			return fmt.Errorf("%s: %s: %v", ErrCreatingConfig, ErrOverwrite, err)
+			return fmt.Errorf("%v: %w", ErrOverwriteRemove, err)
 		}
 	}
 
 	// Check if creating the file would overwrite the file.
 	_, err = os.Stat(fp)
 	if err == nil && !g.opts.overwrite {
-		return fmt.Errorf("%s: %s", ErrCreatingConfig, ErrOverwriteDisabled)
+		return ErrOverwriteDisabled
 	}
 	if errors.Is(err, os.ErrNotExist) {
 		var b []byte
@@ -131,7 +132,7 @@ func (g *Gonf) WriteToFile(conf interface{}) (err error) {
 			b, err = yaml.Marshal(conf)
 		}
 		if err != nil {
-			return fmt.Errorf("%s: %v", ErrMarshalling, err)
+			return fmt.Errorf("%v: %w", ErrMarshalling, err)
 		}
 		err = os.WriteFile(fp, b, 0700)
 	}
@@ -140,6 +141,10 @@ func (g *Gonf) WriteToFile(conf interface{}) (err error) {
 
 // LoadFile unmarshalls the Gonfig to the given interface.
 func (g *Gonf) LoadFile(val interface{}) (err error) {
+	if reflect.ValueOf(val).Kind() != reflect.Ptr {
+		return ErrMustBeAddressable
+	}
+
 	g.mux.Lock()
 	defer g.mux.Unlock()
 
