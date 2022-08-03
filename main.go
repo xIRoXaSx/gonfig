@@ -33,7 +33,7 @@ type Gonf struct {
 
 type gonfOptions struct {
 	overwrite bool
-	dirName   string
+	dir       string
 	fileName  string
 	fileType  GonfType
 	mux       *sync.Mutex
@@ -44,28 +44,47 @@ func New(dirName, fileName string, configType GonfType, overwrite bool) (g *Gonf
 		return nil, ErrExpectedNonNilOrEmpty
 	}
 
-	opts := gonfOptions{
-		overwrite: overwrite,
-		dirName:   dirName,
-		fileName:  fileName,
-		fileType:  configType,
-		mux:       &sync.Mutex{},
-	}
-	opts.mux.Lock()
-	defer opts.mux.Unlock()
-
 	p, err := os.UserConfigDir()
 	if err != nil {
 		return
 	}
-	p = filepath.Join(p, opts.dirName, opts.fileName)
+
 	ext := jsonExtension
-	if opts.fileType == GonfYAML {
+	if configType == GonfYAML {
 		ext = yamlExtension
 	}
-	p += ext
-	opts.fileName += ext
+
+	opts := gonfOptions{
+		overwrite: overwrite,
+		dir:       filepath.Join(p, dirName),
+		fileName:  fileName + ext,
+		fileType:  configType,
+		mux:       &sync.Mutex{},
+	}
+	p = filepath.Join(opts.dir, opts.fileName)
+
+	opts.mux.Lock()
 	g = &Gonf{mux: &sync.Mutex{}, opts: opts, path: p}
+	opts.mux.Unlock()
+	return
+}
+
+func NewWithPath(fullPath string, configType GonfType, overwrite bool) (g *Gonf, err error) {
+	if fullPath == "" {
+		return nil, ErrExpectedNonNilOrEmpty
+	}
+
+	opts := gonfOptions{
+		overwrite: overwrite,
+		dir:       filepath.Dir(fullPath),
+		fileName:  filepath.Base(fullPath),
+		fileType:  configType,
+		mux:       &sync.Mutex{},
+	}
+
+	opts.mux.Lock()
+	g = &Gonf{mux: &sync.Mutex{}, opts: opts, path: fullPath}
+	opts.mux.Unlock()
 	return
 }
 
@@ -74,9 +93,9 @@ func (g *Gonf) FullPath() string {
 	return g.path
 }
 
-// DirName returns the given directory name of the Gonfig file.
-func (g *Gonf) DirName() string {
-	return g.opts.dirName
+// Dir returns the given directory name of the Gonfig file.
+func (g *Gonf) Dir() string {
+	return g.opts.dir
 }
 
 // FileName returns the given name of the Gonfig file.
@@ -96,11 +115,7 @@ func (g *Gonf) WriteToFile(conf interface{}) (err error) {
 	}
 
 	// Create the folder which contains the config.
-	p, err := os.UserConfigDir()
-	if err != nil {
-		return
-	}
-	p = filepath.Join(p, g.opts.dirName)
+	p := filepath.Dir(g.FullPath())
 	_, err = os.Stat(p)
 	if errors.Is(err, os.ErrNotExist) {
 		err = os.Mkdir(p, 0700)
@@ -112,7 +127,8 @@ func (g *Gonf) WriteToFile(conf interface{}) (err error) {
 	}
 
 	fp := g.FullPath()
-	if g.opts.overwrite {
+	_, err = os.Stat(fp)
+	if g.opts.overwrite && err == nil {
 		err = os.Remove(fp)
 		if err != nil {
 			return fmt.Errorf("%v: %w", ErrOverwriteRemove, err)
@@ -139,8 +155,8 @@ func (g *Gonf) WriteToFile(conf interface{}) (err error) {
 	return
 }
 
-// LoadFile unmarshalls the Gonfig to the given interface.
-func (g *Gonf) LoadFile(val interface{}) (err error) {
+// Load unmarshalls the Gonfig to the given interface.
+func (g *Gonf) Load(val interface{}) (err error) {
 	if reflect.ValueOf(val).Kind() != reflect.Ptr {
 		return ErrMustBeAddressable
 	}

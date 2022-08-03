@@ -61,7 +61,7 @@ func TestNewGonfig(t *testing.T) {
 	r.NoError(t, err)
 	r.Exactly(t, p+jsonExtension, g.FullPath())
 	r.Exactly(t, g.FileName(), file+jsonExtension)
-	r.Exactly(t, g.DirName(), dir)
+	r.Exactly(t, g.Dir(), baseDir)
 	r.Exactly(t, g.Type(), gType)
 
 	g, err = New(dir, file, GonfYAML, false)
@@ -74,15 +74,18 @@ func TestNewGonfig(t *testing.T) {
 	r.NoError(t, g.WriteToFile(v))
 
 	var c config
-	r.ErrorIs(t, g.LoadFile(c), ErrMustBeAddressable)
-	r.NoError(t, g.LoadFile(&c))
+	r.ErrorIs(t, g.Load(c), ErrMustBeAddressable)
+	r.NoError(t, g.Load(&c))
 	r.Equal(t, v, &c)
 
 	v.Int8 = -1
 	g, err = New(dir, file, GonfJson, true)
 	r.NoError(t, g.WriteToFile(v))
-	r.NoError(t, g.LoadFile(&c))
+	r.NoError(t, g.Load(&c))
 	r.Exactly(t, v.Int8, c.Int8)
+
+	g, err = NewWithPath(p+"_1"+jsonExtension, GonfJson, true)
+	r.NoError(t, g.WriteToFile(v))
 	r.NoError(t, cleanup(baseDir))
 }
 
