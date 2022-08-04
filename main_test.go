@@ -13,19 +13,19 @@ func TestNewGonfig(t *testing.T) {
 	t.Parallel()
 
 	type test struct {
-		A string
-		B int
-		C any
+		A string `json:"A" yaml:"A"`
+		B int    `json:"B" yaml:"B"`
+		C any    `json:"C" yaml:"C"`
 	}
 
 	type config struct {
-		String  string
-		Int8    int8
-		Uint8   uint8
-		Integer int
-		Float   float32
-		Slice   []string
-		Struct  test
+		String  string   `json:"String" yaml:"String"`
+		Int8    int8     `json:"Int8" yaml:"Int8"`
+		Uint8   uint8    `json:"Uint8" yaml:"Uint8"`
+		Integer int      `json:"Integer" yaml:"Integer"`
+		Float   float32  `json:"Float" yaml:"Float"`
+		Slice   []string `json:"Slice" yaml:"Slice"`
+		Struct  test     `json:"Struct" yaml:"Struct"`
 	}
 
 	v := &config{
@@ -64,7 +64,7 @@ func TestNewGonfig(t *testing.T) {
 	r.Exactly(t, g.Dir(), baseDir)
 	r.Exactly(t, g.Type(), gType)
 
-	g, err = New(dir, file, GonfYAML, false)
+	g, err = New(dir, file, GonfYaml, false)
 	r.NoError(t, err)
 	r.Exactly(t, p+yamlExtension, g.FullPath())
 	r.Exactly(t, g.FileName(), file+yamlExtension)

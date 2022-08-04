@@ -18,8 +18,8 @@ const (
 	// GonfJson corresponds to a config of type JSON.
 	GonfJson GonfType = iota
 
-	// GonfYAML corresponds to a config of type YAML.
-	GonfYAML GonfType = iota
+	// GonfYaml corresponds to a config of type YAML.
+	GonfYaml GonfType = iota
 
 	yamlExtension = ".yaml"
 	jsonExtension = ".json"
@@ -50,7 +50,7 @@ func New(dirName, fileName string, configType GonfType, overwrite bool) (g *Gonf
 	}
 
 	ext := jsonExtension
-	if configType == GonfYAML {
+	if configType == GonfYaml {
 		ext = yamlExtension
 	}
 
