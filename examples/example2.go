@@ -4,7 +4,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/xIRoXaSx/gonfig"
+	"github.com/xiroxasx/gonfig"
 )
 
 type config2 struct {

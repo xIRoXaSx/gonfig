@@ -25,6 +25,7 @@ const (
 	jsonExtension = ".json"
 )
 
+// The Gonf type contains the required information for a gonfig instance.
 type Gonf struct {
 	opts gonfOptions
 	path string
@@ -39,8 +40,11 @@ type gonfOptions struct {
 	mux       *sync.Mutex
 }
 
-func New(dirName, fileName string, configType GonfType, overwrite bool) (g *Gonf, err error) {
-	if dirName == "" || fileName == "" {
+// New creates a new Gonf instance.
+// Upon calling Gonf.WriteToFile, the given dirName will be created inside the default root configuration directory (os.UserConfigDir).
+// Based on the provided configType, the file extension for fileBaseName will be chosen.
+func New(dirName, fileBaseName string, configType GonfType, overwrite bool) (g *Gonf, err error) {
+	if dirName == "" || fileBaseName == "" {
 		return nil, ErrExpectedNonNilOrEmpty
 	}
 
@@ -57,7 +61,7 @@ func New(dirName, fileName string, configType GonfType, overwrite bool) (g *Gonf
 	opts := gonfOptions{
 		overwrite: overwrite,
 		dir:       filepath.Join(p, dirName),
-		fileName:  fileName + ext,
+		fileName:  fileBaseName + ext,
 		fileType:  configType,
 		mux:       &sync.Mutex{},
 	}
@@ -69,6 +73,7 @@ func New(dirName, fileName string, configType GonfType, overwrite bool) (g *Gonf
 	return
 }
 
+// NewWithPath is the same as New but allows to configure a custom path.
 func NewWithPath(fullPath string, configType GonfType, overwrite bool) (g *Gonf, err error) {
 	if fullPath == "" {
 		return nil, ErrExpectedNonNilOrEmpty

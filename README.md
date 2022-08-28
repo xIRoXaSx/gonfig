@@ -8,12 +8,13 @@ aspects of your project.
 
 ## Usage
 The usage is pretty straight forward.  
-Install the latest package via `go get github.com/xIRoXaSx/gonfig` and use as shown in the example.
+Install the latest package via `go get github.com/xiroxasx/gonfig` and use as shown in the example.
 
 ### Example - Minimalistic approach
 In this example we're going to store some configuration inside the users default root configuration directory.  
 Please consult the examples directory for further details. 
 ```go
+// ...
 type config struct {
     BackendAddress string `json:"BackendAddress"`
     Debug          bool   `json:"Debug"`
@@ -30,11 +31,12 @@ func writeConfig() {
     // Create a new Gonfig instance.
     // The folder containing the configuration will be called "GonfigExample" and will reside in
     // the default root directory to use for user-specific configuration data (https://pkg.go.dev/os#UserConfigDir).
+    // To use any path, use the gonfig.NewWithPath func.
     g, err := gonfig.New("GonfigExample", "config", gonfig.GonfJson, false)
     if err != nil {
         log.Fatal(err)
     }
-    
+
     // Store the configuration locally.
     err = g.WriteToFile(myConfig)
     if err != nil {
@@ -43,8 +45,8 @@ func writeConfig() {
     log.Printf("The config has been saved here: %s\n", g.FullPath())
 
     // Load the configuration from the given path.
-    var myConfig config
-    err = g.Load(&myConfig) // Notice the pointer!
+    var loadedConfig config
+    err = g.Load(&loadedConfig) // Notice the pointer!
     if err != nil {
         log.Fatal(err)
     }

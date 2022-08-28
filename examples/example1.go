@@ -3,7 +3,7 @@ package examples
 import (
 	"log"
 
-	"github.com/xIRoXaSx/gonfig"
+	"github.com/xiroxasx/gonfig"
 )
 
 type config1 struct {

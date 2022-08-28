@@ -1,4 +1,4 @@
-module github.com/xIRoXaSx/gonfig
+module github.com/xiroxasx/gonfig
 
 go 1.18
 
